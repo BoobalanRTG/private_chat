@@ -17,14 +17,14 @@ import { AttachFile, Mic, Send, Close, Stop } from "@mui/icons-material";
 
 const MQTT_BROKER_URL = "wss://test.mosquitto.org:8081/mqtt"; // Secure WebSocket
 const options = {
-    clean: true, // Ensures a clean session
-    connectTimeout: 4000, // 4-second timeout
-    clientId: `mqtt_${Math.random().toString(16).slice(3)}`, // Unique client ID
-  };
+  clean: true, // Ensures a clean session
+  connectTimeout: 4000, // 4-second timeout
+  clientId: `mqtt_${Math.random().toString(16).slice(3)}`, // Unique client ID
+};
 const CHATROOM_TOPIC = "chatroom";
-const SUB_TOPIC = "chatroom/Boobalan";
 
 const MqttChat = () => {
+  const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [client, setClient] = useState(null);
@@ -39,45 +39,39 @@ const MqttChat = () => {
   const timerRef = useRef(null);
 
   useEffect(() => {
-    // const mqttClient = mqtt.connect(MQTT_BROKER_URL,options);
+    const userName = prompt("Enter your name:");
+    if (userName) {
+      setName(userName.trim());
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!name) return;
+    
     const mqttClient = mqtt.connect(MQTT_BROKER_URL, options);
 
-
     mqttClient.on("connect", () => {
-      console.log("Connected to MQTT Broker");
       setIsConnected(true);
       mqttClient.subscribe(`${CHATROOM_TOPIC}/#`);
     });
 
     mqttClient.on("message", (topic, message) => {
       const sender = topic.split("/")[1] || "Unknown";
-      if (sender !== "Boobalan") {
-        const receivedMessage = message.toString();
-        let content = receivedMessage;
-
-        if (
-          receivedMessage.startsWith("data:image") ||
-          receivedMessage.startsWith("data:audio")
-        ) {
-          content = receivedMessage;
-        }
-
+      if (sender !== name) {
         setMessages((prevMessages) => [
           ...prevMessages,
-          { sender, content, timestamp: new Date().toLocaleTimeString() },
+          { sender, content: message.toString(), timestamp: new Date().toLocaleTimeString() },
         ]);
       }
     });
 
     setClient(mqttClient);
-    return () => {
-      mqttClient.end();
-    };
-  }, []);
+    return () => mqttClient.end();
+  }, [name]);
 
   const handleSendMessage = (content) => {
-    if (client && isConnected && content) {
-      client.publish(SUB_TOPIC, content);
+    if (client && isConnected && content && name) {
+      client.publish(`${CHATROOM_TOPIC}/${name}`, content);
       setMessages((prevMessages) => [
         ...prevMessages,
         { sender: "Me", content, timestamp: new Date().toLocaleTimeString() },
@@ -86,6 +80,11 @@ const MqttChat = () => {
       setSelectedFile(null);
       setAudioBlob(null);
       setRecording(false);
+    }
+  };
+  const handleKeyDown = (event) => {
+    if (event.key === "Enter" && message.trim()) {
+      handleSendMessage(message);
     }
   };
 
@@ -152,7 +151,7 @@ const MqttChat = () => {
   }, [messages]);
 
   return (
-    <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+    <Box sx={{ height: "90vh", display: "flex", flexDirection: "column" }}>
       <AppBar className="rounded-lg" position="static">
         <Toolbar>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
@@ -193,7 +192,7 @@ const MqttChat = () => {
                 </Typography>
 
                 {msg.content.startsWith("data:image") ? (
-                  <img src={msg.content} alt="Received" />
+                  <img src={msg.content} alt="Received"  style={{ width: "150px", height: "150px", objectFit: "cover", borderRadius: "10px" }} />
                 ) : msg.content.startsWith("data:audio") ? (
                   <audio controls>
                     <source src={msg.content} type="audio/mp3" />
@@ -226,7 +225,7 @@ const MqttChat = () => {
             <img
               src={selectedFile}
               alt="Preview"
-              style={{ maxWidth: "50%", borderRadius: "5px" }}
+              style={{ width: "150px", height: "150px", objectFit: "cover", borderRadius: "10px" }}
             />
           ) : (
             <audio controls>
@@ -273,6 +272,7 @@ const MqttChat = () => {
           fullWidth
           value={message}
           onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
         />
 
         {recording && (
