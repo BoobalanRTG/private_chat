@@ -15,7 +15,12 @@ import {
 } from "@mui/material";
 import { AttachFile, Mic, Send, Close, Stop } from "@mui/icons-material";
 
-const MQTT_BROKER_URL = "ws://broker.hivemq.com:8000/mqtt";
+const MQTT_BROKER_URL = "wss://test.mosquitto.org:8081/mqtt"; // Secure WebSocket
+const options = {
+    clean: true, // Ensures a clean session
+    connectTimeout: 4000, // 4-second timeout
+    clientId: `mqtt_${Math.random().toString(16).slice(3)}`, // Unique client ID
+  };
 const CHATROOM_TOPIC = "chatroom";
 const SUB_TOPIC = "chatroom/Boobalan";
 
@@ -34,7 +39,9 @@ const MqttChat = () => {
   const timerRef = useRef(null);
 
   useEffect(() => {
-    const mqttClient = mqtt.connect(MQTT_BROKER_URL);
+    // const mqttClient = mqtt.connect(MQTT_BROKER_URL,options);
+    const mqttClient = mqtt.connect(MQTT_BROKER_URL, options);
+
 
     mqttClient.on("connect", () => {
       console.log("Connected to MQTT Broker");
@@ -186,10 +193,7 @@ const MqttChat = () => {
                 </Typography>
 
                 {msg.content.startsWith("data:image") ? (
-                  <img
-                    src={msg.content}
-                    alt="Received"
-                  />
+                  <img src={msg.content} alt="Received" />
                 ) : msg.content.startsWith("data:audio") ? (
                   <audio controls>
                     <source src={msg.content} type="audio/mp3" />
@@ -253,7 +257,7 @@ const MqttChat = () => {
           borderRadius: "20px",
         }}
       >
-        <IconButton sx={{ marginX:2,boxShadow:2}} component="label">
+        <IconButton sx={{ marginX: 2, boxShadow: 2 }} component="label">
           <AttachFile />
           <input
             type="file"
@@ -272,12 +276,16 @@ const MqttChat = () => {
         />
 
         {recording && (
-          <Typography variant="body2" sx={{marginLeft:2, marginRight: 1, color: "red" }}>
+          <Typography
+            variant="body2"
+            sx={{ marginLeft: 2, marginRight: 1, color: "red" }}
+          >
             {recordingTime}s
           </Typography>
         )}
 
-        <IconButton sx={{boxShadow:1, marginX:2}}
+        <IconButton
+          sx={{ boxShadow: 1, marginX: 2 }}
           onClick={recording ? handleStopRecording : handleStartRecording}
           color="primary"
         >
