@@ -21,7 +21,7 @@ const options = {
   connectTimeout: 4000, // 4-second timeout
   clientId: `mqtt_${Math.random().toString(16).slice(3)}`, // Unique client ID
 };
-const CHATROOM_TOPIC = "chatroom";
+const CHATROOM_TOPIC = "JollyPannunga";
 
 const MqttChat = () => {
   const [name, setName] = useState("");
