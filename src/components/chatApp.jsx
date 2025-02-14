@@ -25,6 +25,7 @@ const CHATROOM_TOPIC = "chatroom";
 
 const MqttChat = () => {
   const [name, setName] = useState("");
+  const [receiver, setReceiver] = useState("");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [client, setClient] = useState(null);
@@ -39,20 +40,29 @@ const MqttChat = () => {
   const timerRef = useRef(null);
 
   useEffect(() => {
-    const userName = prompt("Enter your name:");
-    if (userName) {
-      setName(userName.trim());
-    }
+    const getValidName = (message) => {
+      let name = "";
+      while (!name || name.includes("#")) {
+        name = prompt(message);
+        if (!name || name.includes("#")) {
+          alert("Invalid input. Please enter a valid name without #.");
+        }
+      }
+      return name.trim();
+    };
+
+    setName(getValidName("Enter your name :"));
+    setReceiver(getValidName("Enter receiver name :"));
   }, []);
 
   useEffect(() => {
-    if (!name) return;
-    
+    if (!name || !receiver) return;
+
     const mqttClient = mqtt.connect(MQTT_BROKER_URL, options);
 
     mqttClient.on("connect", () => {
       setIsConnected(true);
-      mqttClient.subscribe(`${CHATROOM_TOPIC}/#`);
+      mqttClient.subscribe(`${CHATROOM_TOPIC}/${receiver}`);
     });
 
     mqttClient.on("message", (topic, message) => {
@@ -60,7 +70,11 @@ const MqttChat = () => {
       if (sender !== name) {
         setMessages((prevMessages) => [
           ...prevMessages,
-          { sender, content: message.toString(), timestamp: new Date().toLocaleTimeString() },
+          {
+            sender,
+            content: message.toString(),
+            timestamp: new Date().toLocaleTimeString(),
+          },
         ]);
       }
     });
@@ -192,7 +206,16 @@ const MqttChat = () => {
                 </Typography>
 
                 {msg.content.startsWith("data:image") ? (
-                  <img src={msg.content} alt="Received"  style={{ width: "150px", height: "150px", objectFit: "cover", borderRadius: "10px" }} />
+                  <img
+                    src={msg.content}
+                    alt="Received"
+                    style={{
+                      width: "150px",
+                      height: "150px",
+                      objectFit: "cover",
+                      borderRadius: "10px",
+                    }}
+                  />
                 ) : msg.content.startsWith("data:audio") ? (
                   <audio controls>
                     <source src={msg.content} type="audio/mp3" />
@@ -225,7 +248,12 @@ const MqttChat = () => {
             <img
               src={selectedFile}
               alt="Preview"
-              style={{ width: "150px", height: "150px", objectFit: "cover", borderRadius: "10px" }}
+              style={{
+                width: "150px",
+                height: "150px",
+                objectFit: "cover",
+                borderRadius: "10px",
+              }}
             />
           ) : (
             <audio controls>
