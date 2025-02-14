@@ -197,7 +197,7 @@ const MqttChat = () => {
                   color: msg.sender === "Me" ? "#fff" : "#000",
                   padding: "10px",
                   borderRadius: "10px",
-                  maxWidth: "70%",
+                  maxWidth: "80%",
                   textAlign: "left",
                 }}
               >
